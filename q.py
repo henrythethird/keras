@@ -15,7 +15,7 @@ def create_model(batch_size, old_model = None):
     if (old_model != None):
         model.set_weights(old_model.get_weights())
 
-    model.compile(loss='categorical_crossentropy', optimizer='adam')
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['categorical_accuracy'])
 
     return model
 
@@ -23,7 +23,7 @@ def create_model(batch_size, old_model = None):
 
 filename = "poems.txt"
 raw_text = open(filename).read()
-raw_text = raw_text.lower()[0:269701]
+raw_text = raw_text.lower()[0:162001]
 
 chars = sorted(list(set(raw_text)))
 char_to_int = dict((c, i) for i, c in enumerate(chars))
@@ -41,13 +41,13 @@ dataX = keras.utils.to_categorical(dataX)
 dataX = numpy.reshape(dataX, (dataX.shape[0], 1, dataX.shape[1]))
 dataY = keras.utils.to_categorical(dataY)
 
-batch_size = 100
+batch_size = 500
 model = create_model(batch_size)
 
 filepath="models/weights-{epoch:02d}-{loss:.4f}.hdf5"
 checkpoint = keras.callbacks.ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
 
-for n in range(1,10):
+for n in range(1,  10):
     print("### Epoch " + str(n))
     model.fit(dataX, dataY, epochs=1, batch_size=batch_size, callbacks=[checkpoint])
     model.reset_states()
