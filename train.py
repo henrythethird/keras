@@ -37,7 +37,7 @@ def create_model(input_shape, output_shape):
     # LSTM layers are used, because they are incredibly good at learning
     # sequences of structured data
     model.add(keras.layers.LSTM(
-        units=256, 
+        units=128, 
         input_shape=input_shape,
         return_sequences=True
     ))
@@ -47,13 +47,10 @@ def create_model(input_shape, output_shape):
     # generalizing
     model.add(keras.layers.Dropout(0.5))
 
-    model.add(keras.layers.LSTM(256, stateful=False, return_sequences=True))
+    model.add(keras.layers.LSTM(128, stateful=False, return_sequences=True))
     model.add(keras.layers.Dropout(0.4))
 
-    model.add(keras.layers.LSTM(256, stateful=False))
-    model.add(keras.layers.Dropout(0.4))
-
-    model.add(keras.layers.LSTM(256, stateful=False))
+    model.add(keras.layers.LSTM(128, stateful=False))
     model.add(keras.layers.Dropout(0.4))
 
     model.add(keras.layers.Dense(output_shape, activation='softmax'))
@@ -108,7 +105,7 @@ dataX, dataY, chars, char_to_int, int_to_char = load_data(
 
 model = create_model((dataX.shape[1], dataX.shape[2]), len(chars))
 
-train(model, dataX, dataY, batch_size=100, epochs=50)
+train(model, dataX, dataY, batch_size=100, epochs=200)
 generated_string = evaluate(model, 'it stands to reason that this sketch of ' + 
                                    'the saint, made upon the model of the ' + 
                                    'whole species, can be ')
