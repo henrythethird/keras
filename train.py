@@ -37,7 +37,7 @@ def create_model(input_shape, output_shape):
     # LSTM layers are used, because they are incredibly good at learning
     # sequences of structured data
     model.add(keras.layers.LSTM(
-        units=128, 
+        units=256, 
         input_shape=input_shape,
         return_sequences=True
     ))
@@ -47,10 +47,13 @@ def create_model(input_shape, output_shape):
     # generalizing
     model.add(keras.layers.Dropout(0.5))
 
-    model.add(keras.layers.LSTM(128, stateful=False, return_sequences=True))
+    model.add(keras.layers.LSTM(256, stateful=False, return_sequences=True))
     model.add(keras.layers.Dropout(0.4))
 
-    model.add(keras.layers.LSTM(128, stateful=False))
+    model.add(keras.layers.LSTM(256, stateful=False))
+    model.add(keras.layers.Dropout(0.4))
+
+    model.add(keras.layers.LSTM(256, stateful=False))
     model.add(keras.layers.Dropout(0.4))
 
     model.add(keras.layers.Dense(output_shape, activation='softmax'))
