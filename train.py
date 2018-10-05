@@ -1,35 +1,13 @@
 import numpy
 import keras
+from batch_generator import BatchGenerator
 
-def load_data(file_name, seq_length):
-    raw_text = open(file_name).read().lower()[0:20000]
-    input_length = len(raw_text)
 
-    chars = sorted(list(set(raw_text)))
-    vocab_size = len(chars)
+def load_data(file_name, seq_length, batch_size):
+    raw_text = open(file_name).read().lower()
+    bc = BatchGenerator(raw_text, seq_length, batch_size)
 
-    char_to_int = dict((c, i) for i, c in enumerate(chars))
-    int_to_char = dict((i, c) for i, c in enumerate(chars))
-
-    dataX = []
-    dataY = []
-
-    for i in range(0, input_length - seq_length):
-        seq_in = raw_text[i:i + seq_length]
-        seq_out = raw_text[i + seq_length]
-
-        translated_in = keras.utils.to_categorical([char_to_int[c] for c in seq_in], vocab_size)
-        translated_out = keras.utils.to_categorical(char_to_int[seq_out], vocab_size)
-
-        dataX.append([translated_in])
-        dataY.append([translated_out])
-
-    n_patterns = len(dataX)
-
-    dataX = numpy.reshape(dataX, (n_patterns, seq_length, vocab_size))
-    dataY = numpy.reshape(dataY, (n_patterns, vocab_size))
-
-    return dataX, dataY, chars, char_to_int, int_to_char
+    return bc
 
 def create_model(input_shape, output_shape):
     model = keras.models.Sequential()
@@ -65,7 +43,7 @@ def create_model(input_shape, output_shape):
 
     return model
 
-def train(model, dataX, dataY, batch_size, epochs):
+def train(model, generator, batch_size, epochs):
     checkpoint = keras.callbacks.ModelCheckpoint(
         filepath='models/weights-{epoch:02d}-{loss:.4f}.hdf5', 
         monitor='loss', 
@@ -74,40 +52,38 @@ def train(model, dataX, dataY, batch_size, epochs):
         mode='min'
     )
 
-    model.fit(
-        x=dataX, y=dataY, 
+    model.fit_generator(
+        generator.generate(), 
         epochs=epochs, 
-        batch_size=batch_size, 
         shuffle=False, 
-        callbacks=[checkpoint]
+        callbacks=[checkpoint],
+        steps_per_epoch=generator.n_samples
     )
 
-def evaluate(model, seed):
+def evaluate(model, generator, seed):
     seq_length = len(seed)
     for _ in range(0, 1000):
-        inp = [
-            keras.utils.to_categorical(char_to_int[v], len(char_to_int)) 
-            for v in seed[-seq_length:]
-        ]
-        inp = numpy.reshape(inp, (1, seq_length, len(char_to_int)))
+        inp = generator._one_hot_encode_list(seed[-seq_length:])
+        inp = numpy.reshape(inp, (1, seq_length, generator.vocab_size))
 
         prediciton = model.predict(inp, verbose=False, batch_size=1)
-        best_prediction = numpy.argmax(prediciton)
-
-        start = int_to_char[best_prediction]
+        start = generator._one_hot_decode(prediciton)
         seed += start
 
     return seed[seq_length:]
 
-dataX, dataY, chars, char_to_int, int_to_char = load_data(
-    "text.txt", seq_length=100
+generator = load_data(
+    "text.txt", seq_length=100, batch_size=100
 )
 
-model = create_model((dataX.shape[1], dataX.shape[2]), len(chars))
+model = create_model((100, generator.vocab_size), generator.vocab_size)
 
-train(model, dataX, dataY, batch_size=100, epochs=200)
-generated_string = evaluate(model, 'it stands to reason that this sketch of ' + 
-                                   'the saint, made upon the model of the ' + 
-                                   'whole species, can be ')
+train(model, generator, batch_size=100, epochs=50)
+generated_string = evaluate(
+    model, generator,
+    'it stands to reason that this sketch of ' + 
+    'the saint, made upon the model of the ' + 
+    'whole species, can be '
+)
 
 print(generated_string)
